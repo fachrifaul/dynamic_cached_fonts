@@ -1,5 +1,5 @@
 // Demo title name
-const String demoTitle = 'Dynamic Cached Fonts Demo';
+const String demoTitle = 'Cache font';
 
 // Font family names
 
@@ -20,7 +20,14 @@ const String firaMonoUrl =
 
 const String firaSansBoldUrl =
         'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/ttf/FiraSans-Bold.ttf',
-    firaSansRegularUrl = 'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/ttf/FiraSans-Regular.ttf',
-    firaSansItalicUrl = 'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/ttf/FiraSans-Italic.ttf',
-    firaSansThinUrl = 'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/ttf/FiraSans-Thin.ttf';
+    firaSansRegularUrl =
+        'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/ttf/FiraSans-Regular.ttf',
+    firaSansItalicUrl =
+        'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/ttf/FiraSans-Italic.ttf',
+    firaSansThinUrl =
+        'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/ttf/FiraSans-Thin.ttf';
 const String firaCodeUrl = String.fromEnvironment('FIREBASE_STORAGE_FONT_URL');
+
+const hurricane = 'Hurricane';
+const hurricaneUrl =
+    'https://raw.githubusercontent.com/googlefonts/hurricane/8cc30aac85d0b3d1205cc9f99fe654a4bac316b6/fonts/otf/Hurricane-Regular.otf';

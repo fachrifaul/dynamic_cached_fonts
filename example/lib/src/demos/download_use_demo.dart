@@ -22,8 +22,8 @@ class DynamicCachedFontsDemo2 extends StatelessWidget {
           ),
           Expanded(
             child: DisplayText(
-              'The text is being displayed in the default flutter font which is ${DefaultTextStyle.of(context).style.fontFamily}. To load this text in $firaMono, click the download button above ☝️',
-              fontFamily: firaMono,
+              'The text is being displayed in the default flutter font which is ${DefaultTextStyle.of(context).style.fontFamily}. To load this text in $hurricane, click the download button above ☝️',
+              fontFamily: hurricane,
             ),
           ),
         ],
@@ -43,8 +43,8 @@ class DynamicCachedFontsDemo2 extends StatelessWidget {
 
   void handleDownloadButtonPress() {
     final DynamicCachedFonts dynamicCachedFont = DynamicCachedFonts(
-      fontFamily: firaMono,
-      url: firaMonoUrl,
+      fontFamily: hurricane,
+      url: hurricaneUrl,
     );
 
     dynamicCachedFont.load();

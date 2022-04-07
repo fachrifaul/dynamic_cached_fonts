@@ -2,16 +2,17 @@ import 'dart:async';
 
 import 'package:dynamic_cached_fonts/dynamic_cached_fonts.dart';
 import 'package:dynamic_cached_fonts_example/constants.dart';
+import 'package:dynamic_cached_fonts_example/src/demos/multi_font_loading_demo.dart';
 import 'package:flutter/material.dart';
 
 import '../components.dart';
-import 'firebase_demo.dart';
 
 class DynamicCachedFontsDemo3 extends StatefulWidget {
   const DynamicCachedFontsDemo3({Key? key}) : super(key: key);
 
   @override
-  _DynamicCachedFontsDemo3State createState() => _DynamicCachedFontsDemo3State();
+  _DynamicCachedFontsDemo3State createState() =>
+      _DynamicCachedFontsDemo3State();
 }
 
 class _DynamicCachedFontsDemo3State extends State<DynamicCachedFontsDemo3> {
@@ -42,8 +43,9 @@ class _DynamicCachedFontsDemo3State extends State<DynamicCachedFontsDemo3> {
             ],
           ),
           DisplayText(
-            'The text is being displayed in the default flutter font which is ${DefaultTextStyle.of(context).style.fontFamily}. To download $firaMono, click the download button above ☝️.',
-            fontFamily: notoSans,
+            'The text is being displayed in the default flutter font which is ${DefaultTextStyle.of(context).style.fontFamily}. '
+            'To download $hurricane, click the download button above ☝️.',
+            fontFamily: hurricane,
           ),
         ],
       ),
@@ -52,19 +54,21 @@ class _DynamicCachedFontsDemo3State extends State<DynamicCachedFontsDemo3> {
         label: 'Next Example',
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute<DynamicCachedFontsDemo4>(
-            builder: (_) => const DynamicCachedFontsDemo4(),
+          MaterialPageRoute<DynamicCachedFontsDemo5>(
+            builder: (_) => const DynamicCachedFontsDemo5(),
           ),
         ),
       ),
     );
   }
 
-  Future<void> handleDownloadButtonPress() => DynamicCachedFonts.cacheFont(notoSansUrl);
+  Future<void> handleDownloadButtonPress() =>
+      DynamicCachedFonts.cacheFont(hurricaneUrl);
 
   Future<void> handleUseFontPress() async {
-    if (await DynamicCachedFonts.canLoadFont(notoSansUrl)) {
-      await DynamicCachedFonts.loadCachedFont(notoSansUrl, fontFamily: notoSans);
+    if (await DynamicCachedFonts.canLoadFont(hurricaneUrl)) {
+      await DynamicCachedFonts.loadCachedFont(hurricaneUrl,
+          fontFamily: hurricane);
       setState(() {});
     } else {
       print('Font not found in cache :(');
@@ -77,10 +81,6 @@ class _DynamicCachedFontsDemo3State extends State<DynamicCachedFontsDemo3> {
 
   //ignore: avoid_void_async
   void handleDeleteFontPress() async {
-    print('Can load font: ${await DynamicCachedFonts.canLoadFont(notoSansUrl)}');
-
-    await DynamicCachedFonts.removeCachedFont(notoSansUrl);
-
-    print('Can load font: ${await DynamicCachedFonts.canLoadFont(notoSansUrl)}');
+    await DynamicCachedFonts.removeCachedFont(hurricaneUrl);
   }
 }
