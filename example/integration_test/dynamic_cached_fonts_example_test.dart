@@ -11,6 +11,8 @@ import 'package:integration_test/integration_test.dart' show IntegrationTestWidg
 
 const String fontUrl = cascadiaCodeUrl,
     fontName = cascadiaCode,
+    altFontUrl = notoSansUrl,
+    altFontName = notoSans,
     firebaseFontUrl = firaCodeUrl,
     firebaseFontName = firaCode;
 
@@ -30,7 +32,7 @@ void main() {
   tearDown(() => cacheManager.emptyCache());
 
   group('DynamicCachedFonts.load', () {
-    FileInfo? font;
+    late FileInfo font;
     late DynamicCachedFonts cachedFontLoader;
 
     setUp(() async {
@@ -39,12 +41,8 @@ void main() {
       font = (await cachedFontLoader.load()).first;
     });
 
-    testWidgets('should load font into cache', (_) async {
-      expect(font, isNotNull);
-    });
-
     testWidgets('should load font file with a valid extension', (_) async {
-      final String fontFileName = font!.file.basename;
+      final String fontFileName = font.file.basename;
 
       expect(fontFileName, endsWith('ttf'));
     });
@@ -61,13 +59,120 @@ void main() {
 
       expect(
         downloadedFont.file.readAsBytesSync(),
-        orderedEquals(font!.file.readAsBytesSync()),
+        orderedEquals(font.file.readAsBytesSync()),
       );
     });
   });
 
+  group('DynamicCachedFonts.loadStream', () {
+    late DynamicCachedFonts cachedFontLoader;
+
+    const List<String> fontUrls = <String>[
+      firaSansBoldUrl,
+      firaSansItalicUrl,
+      firaSansRegularUrl,
+      firaSansThinUrl,
+    ];
+
+    const List<String> altFontUrls = <String>[
+      robotoBoldUrl,
+      robotoItalicUrl,
+      robotoRegularUrl,
+      robotoThinUrl,
+    ];
+
+    setUp(() async {
+      cachedFontLoader = DynamicCachedFonts.family(
+        urls: fontUrls,
+        fontFamily: firaSans,
+      );
+    });
+
+    testWidgets('should load font file with a valid extension', (_) async {
+      final Stream<FileInfo> fontStream = cachedFontLoader.loadStream();
+
+      final Stream<String> fontFileNameStream = fontStream.map((font) => font.file.basename);
+
+      await expectLater(fontFileNameStream, emitsThrough(endsWith('ttf')));
+    });
+
+    testWidgets('should allow font to be loaded only once', (_) async {
+      await cachedFontLoader.loadStream().listen((event) {}).asFuture();
+      await expectLater(cachedFontLoader.loadStream(), emitsError(isStateError));
+    });
+
+    testWidgets('should load valid font files', (_) async {
+      final Stream<FileInfo> fontStream = cachedFontLoader.loadStream();
+
+      final List<Uint8List> downloadedFontBytes = await awaitedMap(fontUrls, (String url) async {
+        final String generatedCacheKey = cacheKeyFromUrl(url);
+        final FileInfo donwloadedFont =
+            await cacheManager.downloadFile(url, key: '$generatedCacheKey-test');
+
+        return donwloadedFont.file.readAsBytes();
+      });
+
+      final Stream<Uint8List> fontBytes =
+          fontStream.map((FileInfo font) => font.file.readAsBytesSync());
+
+      await expectLater(fontBytes, emitsInOrder(downloadedFontBytes));
+    });
+
+    testWidgets('should emit downloadProgress events', (_) async {
+      final List<DownloadProgress> progressListener = [];
+      final Set<String> downloadedfontUrls = {};
+
+      final altCachedFontLoader = DynamicCachedFonts.family(
+        urls: altFontUrls,
+        fontFamily: roboto,
+      );
+
+      final Stream<FileInfo> fontStream = altCachedFontLoader.loadStream(
+        downloadProgressListener: (progress) {
+          progressListener.add(progress);
+          downloadedfontUrls.add(progress.originalUrl);
+        },
+      );
+
+      await fontStream.listen((_) {}).asFuture();
+
+      expect(downloadedfontUrls, unorderedEquals(altFontUrls.toSet()));
+      expect(
+        progressListener,
+        anyElement(
+          predicate<DownloadProgress>(
+            (progress) => progress.progress != null && progress.progress! > 0,
+            'has a progress value greater than 0',
+          ),
+        ),
+      );
+    });
+
+    testWidgets('should emit itemCountProgress events', (_) async {
+      final List<List<num>> progressListener = [];
+
+      final Stream<FileInfo> fontStream = cachedFontLoader.loadStream(
+        itemCountProgressListener: ((progress, totalItems, downloadedItems) =>
+            progressListener.add([progress, totalItems, downloadedItems])),
+      );
+
+      await fontStream.listen((_) {}).asFuture();
+
+      expect(progressListener, hasLength(equals(fontUrls.length)));
+      expect(
+        progressListener,
+        everyElement(predicate<List<num>>(
+          (event) => event[0] == event[2] / event[1],
+          'has a progress value equal to the number of downloaded items divided by the total number of items',
+        )),
+      );
+      expect(progressListener.first, orderedEquals([0.25, fontUrls.length, 1]));
+      expect(progressListener.last, orderedEquals([1.0, fontUrls.length, fontUrls.length]));
+    });
+  });
+
   group('DynamicCachedFonts.family', () {
-    Iterable<FileInfo>? fonts;
+    late Iterable<FileInfo> fonts;
     late DynamicCachedFonts cachedFontLoader;
 
     const List<String> fontUrls = <String>[
@@ -86,10 +191,6 @@ void main() {
       fonts = await cachedFontLoader.load();
     });
 
-    testWidgets('should load all fonts into cache', (_) async {
-      expect(fonts, everyElement(isNotNull));
-    });
-
     testWidgets('should load valid font files', (_) async {
       final List<Uint8List> downloadedFontBytes = await awaitedMap(fontUrls, (String url) async {
         final String generatedCacheKey = cacheKeyFromUrl(url);
@@ -100,7 +201,7 @@ void main() {
       });
 
       final List<Uint8List> fontBytes =
-          fonts!.map((FileInfo font) => font.file.readAsBytesSync()).toList();
+          fonts.map((FileInfo font) => font.file.readAsBytesSync()).toList();
 
       for (int i = 0; i < fontUrls.length; i++) {
         expect(fontBytes[i], orderedEquals(downloadedFontBytes[i]));
@@ -113,7 +214,7 @@ void main() {
   });
 
   group('DynamicCachedFonts.fromFirebase', () {
-    FileInfo? font;
+    late FileInfo font;
     late Reference bucketRef;
 
     setUp(() async {
@@ -129,7 +230,7 @@ void main() {
     });
 
     testWidgets('should parse Firebase Bucket URL', (_) async {
-      expect(font!.originalUrl, equals(await bucketRef.getDownloadURL()));
+      expect(font.originalUrl, equals(await bucketRef.getDownloadURL()));
     });
 
     testWidgets('should load font into cache', (_) async {
@@ -138,7 +239,7 @@ void main() {
 
     testWidgets('should load valid font file from Firebase', (_) async {
       expect(
-        font!.file.readAsBytesSync(),
+        font.file.readAsBytesSync(),
         orderedEquals((await bucketRef.getData())!),
       );
     });
@@ -173,6 +274,71 @@ void main() {
     });
   });
 
+  group('DynamicCachedFonts.cacheFontStream', () {
+    late Stream<FileInfo> fontStream;
+
+    setUp(() => fontStream = DynamicCachedFonts.cacheFontStream(fontUrl));
+
+    testWidgets('should load font into cache', (_) async {
+      await fontStream.listen((_) {}).asFuture();
+
+      final FileInfo? font = await cacheManager.getFileFromCache(cacheKey);
+
+      expect(font, isNotNull);
+    });
+    testWidgets('should load valid font file', (_) async {
+      final FileInfo downloadedFont = await cacheManager.downloadFile(
+        fontUrl,
+        key: cacheKey,
+      );
+
+      await expectLater(
+        fontStream.map((font) => font.file.readAsBytesSync()),
+        emits(orderedEquals(downloadedFont.file.readAsBytesSync())),
+      );
+    });
+
+    testWidgets('should load font file with a valid extension', (_) async {
+      final Stream<String> fontFileNameStream = fontStream.map((font) => font.file.basename);
+
+      await expectLater(fontFileNameStream, emits(endsWith('ttf')));
+    });
+
+    testWidgets('should throw UnsupportedError if file extension is not valid', (_) async {
+      const String woffUrl =
+          'https://cdn.jsdelivr.net/gh/mozilla/Fira@4.202/woff/FiraMono-Regular.woff';
+
+      await expectLater(
+          DynamicCachedFonts.cacheFontStream(woffUrl), emitsError(isUnsupportedError));
+    });
+
+    testWidgets('should emit downloadProgress events', (_) async {
+      final List<DownloadProgress> progressListener = [];
+      final Set<String> downloadedfontUrl = {};
+
+      final Stream<FileInfo> fontStream = DynamicCachedFonts.cacheFontStream(
+        altFontUrl,
+        progressListener: (progress) {
+          progressListener.add(progress);
+          downloadedfontUrl.add(progress.originalUrl);
+        },
+      );
+
+      await fontStream.listen((_) {}).asFuture();
+
+      expect(downloadedfontUrl, equals({altFontUrl}));
+      expect(
+        progressListener,
+        anyElement(
+          predicate<DownloadProgress>(
+            (progress) => progress.progress != null && progress.progress! > 0,
+            'has a progress value greater than 0',
+          ),
+        ),
+      );
+    });
+  });
+
   group('DynamicCachedFonts.canLoadFont', () {
     setUp(() => cacheManager.downloadFile(
           fontUrl,
@@ -180,29 +346,28 @@ void main() {
         ));
 
     testWidgets('should return true when font is available in cache', (_) async {
-      expect(
-        await DynamicCachedFonts.canLoadFont(fontUrl),
-        isTrue,
+      await expectLater(
+        DynamicCachedFonts.canLoadFont(fontUrl),
+        completion(isTrue),
       );
     });
 
     testWidgets('should return false when font is not available in cache', (_) async {
+      final FileInfo? font = await cacheManager.getFileFromCache(cacheKey);
+
+      font?.file.deleteSync();
       await cacheManager.removeFile(cacheKey);
 
-      // Temporary hack for file removal
-      Future<void>.delayed(
-        const Duration(milliseconds: 10),
-        () async => expect(
-          await DynamicCachedFonts.canLoadFont(fontUrl),
-          isFalse,
-        ),
+      await expectLater(
+        DynamicCachedFonts.canLoadFont(fontUrl),
+        completion(isFalse),
       );
     });
   });
 
   group('DynamicCachedFonts.loadCachedFont', () {
     late FontLoader fontLoader;
-    FileInfo? font;
+    late FileInfo font;
     late FileInfo downloadedFont;
 
     setUp(() async {
@@ -217,14 +382,10 @@ void main() {
       );
     });
 
-    testWidgets('should load font into cache', (_) async {
-      expect(font, isNotNull);
-    });
-
     testWidgets('should load valid font file', (_) async {
       expect(
         downloadedFont.file.readAsBytesSync(),
-        orderedEquals(font!.file.readAsBytesSync()),
+        orderedEquals(font.file.readAsBytesSync()),
       );
     });
 
@@ -288,18 +449,92 @@ void main() {
     });
   });
 
+  group('DynamicCachedFonts.loadCachedFamilyStream', () {
+    late FontLoader fontLoader;
+    late Stream<FileInfo> fontStream;
+
+    const List<String> fontUrls = <String>[
+      firaSansBoldUrl,
+      firaSansItalicUrl,
+      firaSansRegularUrl,
+      firaSansThinUrl,
+    ];
+
+    setUp(() async {
+      fontLoader = FontLoader(fontName);
+
+      await awaitedMap(fontUrls, (String url) {
+        final String generatedCacheKey = cacheKeyFromUrl(url);
+        return cacheManager.downloadFile(url, key: generatedCacheKey);
+      });
+
+      fontStream = DynamicCachedFonts.loadCachedFamilyStream(
+        fontUrls,
+        fontFamily: firaSans,
+        fontLoader: fontLoader,
+      );
+    });
+
+    testWidgets('should load font files with a valid extension', (_) async {
+      final Stream<String> fontFileNameStream = fontStream.map((font) => font.file.basename);
+
+      await expectLater(fontFileNameStream, emitsThrough(endsWith('ttf')));
+    });
+
+    testWidgets('should load valid font files', (_) async {
+      final List<Uint8List> downloadedFontBytes = await awaitedMap(fontUrls, (String url) async {
+        final String generatedCacheKey = cacheKeyFromUrl(url);
+        final FileInfo donwloadedFont =
+            await cacheManager.downloadFile(url, key: '$generatedCacheKey-test');
+
+        return donwloadedFont.file.readAsBytes();
+      });
+
+      final Stream<Uint8List> fontBytes =
+          fontStream.map((FileInfo font) => font.file.readAsBytesSync());
+
+      await expectLater(fontBytes, emitsInOrder(downloadedFontBytes));
+    });
+
+    testWidgets('should load the font family into the Flutter Engine', (_) async {
+      await fontStream.listen((_) {}).asFuture();
+
+      // This tests that load() is being called in loadCachedFamily.
+      // A single instance of FontLoader can only be loaded once, so if
+      // StateError is thrown, it means that load() has already been called.
+      expect(fontLoader.load(), throwsStateError);
+    });
+
+    testWidgets('should emit itemCountProgress events', (_) async {
+      final List<List<num>> progressListener = [];
+
+      final Stream<FileInfo> fontStream = DynamicCachedFonts.loadCachedFamilyStream(
+        fontUrls,
+        fontFamily: firaSans,
+        progressListener: ((progress, totalItems, downloadedItems) =>
+            progressListener.add([progress, totalItems, downloadedItems])),
+      );
+
+      await fontStream.listen((_) {}).asFuture();
+
+      expect(progressListener, hasLength(equals(fontUrls.length)));
+      expect(
+        progressListener,
+        everyElement(predicate<List<num>>((event) => event[0] == event[2] / event[1])),
+      );
+      expect(progressListener.first, orderedEquals([0.25, fontUrls.length, 1]));
+      expect(progressListener.last, orderedEquals([1.0, fontUrls.length, fontUrls.length]));
+    });
+  });
+
   testWidgets('DynamicCachedFonts.removeCachedFont should remove the font from cache', (_) async {
     await cacheManager.downloadFile(fontUrl, key: cacheKey);
 
     await DynamicCachedFonts.removeCachedFont(fontUrl);
 
-    // Temporary hack for file removal
-    Future<void>.delayed(
-      const Duration(milliseconds: 10),
-      () async => expect(
-        await cacheManager.getFileFromCache(cacheKey),
-        isNull,
-      ),
+    await expectLater(
+      cacheManager.getFileFromCache(cacheKey, ignoreMemCache: true),
+      completion(isNull),
     );
   });
 }
