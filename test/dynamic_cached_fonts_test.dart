@@ -40,7 +40,8 @@ void main() {
   });
 
   group('DynamicCachedFonts.toggleVerboseLogging', () {
-    test('should have logging disabled by default', () => expect(Utils.shouldVerboseLog, isFalse));
+    test('should have logging disabled by default',
+        () => expect(Utils.shouldVerboseLog, isFalse));
 
     test('should enable logging when toggled', () {
       DynamicCachedFonts.toggleVerboseLogging(true);
@@ -52,40 +53,6 @@ void main() {
 
       DynamicCachedFonts.toggleVerboseLogging(false);
       expect(Utils.shouldVerboseLog, isFalse);
-    });
-  });
-
-  group('DynamicCachedFonts.custom', () {
-    test(
-      'should not have a custom cache manager by default',
-      () => expect(DynamicCachedFontsCacheManager.getCustomCacheManager(), isNull),
-    );
-
-    test('sets a custom cache manager', () {
-      final CacheManager cacheManager = CacheManager(Config(cacheKey));
-
-      DynamicCachedFonts.custom(cacheManager: cacheManager);
-
-      expect(DynamicCachedFontsCacheManager.getCustomCacheManager(), equals(cacheManager));
-    });
-
-    test('does not replace the cache manager if force is false', () {
-      final CacheManager newCacheManager = CacheManager(Config('$cacheKey-new'));
-
-      DynamicCachedFonts.custom(cacheManager: newCacheManager);
-
-      expect(
-        DynamicCachedFontsCacheManager.getCustomCacheManager(),
-        isNot(equals(newCacheManager)),
-      );
-    });
-
-    test('replaces the cache manager if force is true', () {
-      final CacheManager newCacheManager = CacheManager(Config('$cacheKey-force'));
-
-      DynamicCachedFonts.custom(cacheManager: newCacheManager, force: true);
-
-      expect(DynamicCachedFontsCacheManager.getCustomCacheManager(), equals(newCacheManager));
     });
   });
 
@@ -104,49 +71,6 @@ void main() {
     expect(mockUrls.map(cacheKeyFromUrl), orderedEquals(expectedCacheKeys));
   });
 
-  group('DynamicCachedFontsCacheManager', () {
-    setUp(() => DynamicCachedFontsCacheManager.clearCacheManagers());
-
-    test('uses the correct cache key for the default instance', () {
-      const String defaultCacheKey = 'DynamicCachedFontsFontCacheKey';
-      final CacheManager defaultCacheManager = DynamicCachedFontsCacheManager.defaultCacheManager;
-
-      expect(defaultCacheManager.store.storeKey, equals(defaultCacheKey));
-    });
-
-    test('getCacheManager returns the default cache manager', () {
-      final cacheManager = DynamicCachedFontsCacheManager.getCacheManager(cacheKey);
-
-      expect(cacheManager, equals(DynamicCachedFontsCacheManager.defaultCacheManager));
-    });
-
-    test('handleCacheManager creates a new instance for non-default values', () {
-      // A new instance of CacheManager is created only if the default values aren't used.
-      DynamicCachedFontsCacheManager.handleCacheManager(cacheKey, const Duration(days: 366), 201);
-
-      final cacheManager = DynamicCachedFontsCacheManager.getCacheManager(cacheKey);
-
-      expect(cacheManager.store.storeKey, equals(cacheKey));
-      expect(cacheManager, isNot(equals(DynamicCachedFontsCacheManager.defaultCacheManager)));
-    });
-
-    test('custom cache managers can be set and retrieved', () {
-      expect(DynamicCachedFontsCacheManager.getCustomCacheManager(), isNull);
-
-      final CacheManager cacheManager = CacheManager(Config(cacheKey));
-      DynamicCachedFontsCacheManager.setCustomCacheManager(cacheManager);
-
-      expect(DynamicCachedFontsCacheManager.getCustomCacheManager(), equals(cacheManager));
-    });
-
-    test('getCacheManager returns the custom cache manager by default, if set', () {
-      final CacheManager cacheManager = CacheManager(Config(cacheKey));
-      DynamicCachedFontsCacheManager.setCustomCacheManager(cacheManager);
-
-      expect(DynamicCachedFontsCacheManager.getCacheManager(cacheKey), equals(cacheManager));
-    });
-  });
-
   test('getFileNameOrUrl', () {
     const List<String> expectedFileNames = [
       'a.ttf',
@@ -159,6 +83,7 @@ void main() {
       'fontTest7.ttf',
     ];
 
-    expect(mockUrls.map(Utils.getFileNameOrUrl), orderedEquals(expectedFileNames));
+    expect(
+        mockUrls.map(Utils.getFileNameOrUrl), orderedEquals(expectedFileNames));
   });
 }
