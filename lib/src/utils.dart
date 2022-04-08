@@ -2,6 +2,7 @@ import 'dart:developer' as dev;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dynamic_cached_fonts/src/download_progress.dart';
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart';
@@ -24,7 +25,7 @@ typedef ItemCountProgressListener = void Function(
 ///
 /// - The [progress] argument is a [DownloadProgress] object that contains
 ///   information about the download progress.
-typedef DownloadProgressListener = void Function(double progress);
+typedef DownloadProgressListener = void Function(DownloadProgress progress);
 
 /// Gets the sanitized url from [url] which is used as `cacheKey` when
 /// downloading, caching or loading.

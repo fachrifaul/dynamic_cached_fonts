@@ -1,6 +1,6 @@
 import 'package:dynamic_cached_fonts/dynamic_cached_fonts.dart';
-import 'package:flutter/material.dart';
 import 'package:dynamic_cached_fonts_example/constants.dart';
+import 'package:flutter/material.dart';
 
 import '../components.dart';
 import 'download_use_controls_family_stream_demo.dart';
@@ -9,14 +9,15 @@ class DynamicCachedFontsDemo6 extends StatefulWidget {
   const DynamicCachedFontsDemo6({Key? key}) : super(key: key);
 
   @override
-  _DynamicCachedFontsDemo6State createState() => _DynamicCachedFontsDemo6State();
+  _DynamicCachedFontsDemo6State createState() =>
+      _DynamicCachedFontsDemo6State();
 }
 
 class _DynamicCachedFontsDemo6State extends State<DynamicCachedFontsDemo6> {
   int position = 0, total = 0;
   double progress = 0;
 
-  late final Stream<FileInfo> fontStream;
+  late final Stream<String> fontStream;
   DownloadProgress? downloadProgress;
 
   @override
@@ -31,14 +32,14 @@ class _DynamicCachedFontsDemo6State extends State<DynamicCachedFontsDemo6> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          '$demoTitle - Load Family As Stream',
+          '$demoTitle - Stream',
         ),
       ),
-      body: Column(
+      body: ListView(
         children: <Widget>[
           CustomButton(
             title: 'Download and Use',
-            onPressed: handleDownloadButtonPress,
+            onPressed: () => handleDownloadButtonPress(),
           ),
           DisplayText(
             'The text is being displayed in the default flutter font which is ${DefaultTextStyle.of(context).style.fontFamily}.',
@@ -85,7 +86,9 @@ class _DynamicCachedFontsDemo6State extends State<DynamicCachedFontsDemo6> {
     );
   }
 
-  void handleDownloadButtonPress() => fontStream.listen((_) {});
+  void handleDownloadButtonPress() {
+    fontStream.listen((_) {});
+  }
 
   void setupFontLoader() {
     final DynamicCachedFonts dynamicCachedFont = DynamicCachedFonts.family(
@@ -93,7 +96,8 @@ class _DynamicCachedFontsDemo6State extends State<DynamicCachedFontsDemo6> {
       urls: [robotoBoldUrl, robotoItalicUrl, robotoRegularUrl, robotoThinUrl],
     );
     fontStream = dynamicCachedFont.loadStream(
-      itemCountProgressListener: (progress, totalItems, currentFont) => setState(() {
+      itemCountProgressListener: (progress, totalItems, currentFont) =>
+          setState(() {
         this.progress = progress;
         total = totalItems;
         position = currentFont;
@@ -130,7 +134,8 @@ class _DynamicCachedFontsDemo6State extends State<DynamicCachedFontsDemo6> {
         ),
       ]);
     else if (downloadProgress != null && downloadProgress!.downloaded > 0)
-      loaders.add(Text('Downloaded font from ${downloadProgress?.originalUrl}!'));
+      loaders
+          .add(Text('Downloaded font from ${downloadProgress?.originalUrl}!'));
 
     return loaders;
   }

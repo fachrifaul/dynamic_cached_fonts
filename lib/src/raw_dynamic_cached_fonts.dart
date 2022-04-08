@@ -114,44 +114,32 @@ abstract class RawDynamicCachedFonts {
     }
 
     final length = response.contentLength ?? 0;
+
     List<int> bodyBytes = [];
     int received = 0;
 
-    Stream<List<int>> stream2 = response.stream.transform(
-      StreamTransformer.fromHandlers(
-        handleData: (data, sink) {
-          bodyBytes = data;
-          received += data.length;
+    await for (var data in response.stream) {
+      bodyBytes.addAll(data);
+      received += data.length;
 
-          print(received);
+      final progress = (received / length) * 100;
+      progressListener?.call(
+        DownloadProgress(
+            originalUrl: cacheKey, totalSize: length, downloaded: received),
+      );
 
-          sink.add(data);
+      devLog([
+        'Download progress: $progress% for ${Utils.getFileNameOrUrl(cacheKey)}'
+      ]);
+      await saveFontToDeviceFileSystem(cacheKey, bodyBytes);
 
-          final progress = (received / length) * 100;
-          progressListener?.call(progress);
+      final file = await localFile(cacheKey);
 
-          devLog([
-            'Download progress: $progress% for ${Utils.getFileNameOrUrl(cacheKey)}'
-          ]);
-        },
-        handleError: (error, stack, sink) {
-          // If that call was not successful, throw an error.
-          throw Exception('Failed to load font with url: $url');
-        },
-        // ignore: void_checks
-        handleDone: (sink) async* {
-          sink.close();
+      Utils.verifyFileExtension(file);
 
-          await saveFontToDeviceFileSystem(cacheKey, bodyBytes);
-
-          final file = await localFile(cacheKey);
-          Utils.verifyFileExtension(file);
-
-          final buffer = toUint8List(bodyBytes);
-          yield ByteData.view(buffer.buffer);
-        },
-      ),
-    );
+      final buffer = toUint8List(bodyBytes);
+      yield ByteData.view(buffer.buffer);
+    }
   }
 
   /// Checks whether the given [url] can be loaded directly from cache.
@@ -292,7 +280,7 @@ abstract class RawDynamicCachedFonts {
   ///   an [int] value which indicates the total number of items to be downloaded and,
   ///   another [int] value which indicates the number of items that have been
   ///   downloaded so far.
-  static Stream<ByteData> loadCachedFamilyStream(
+  static Stream<String> loadCachedFamilyStream(
     List<String> urls, {
     required String fontFamily,
     required ItemCountProgressListener? progressListener,
@@ -305,7 +293,6 @@ abstract class RawDynamicCachedFonts {
     for (final String url in urls) {
       final String cacheKey = Utils.fileName(url);
       final font = await loadFontFromDeviceFileSystem(cacheKey);
-      // return cache;
 
       if (font == null)
         throw StateError('Font should already be cached to be loaded');
@@ -324,7 +311,7 @@ abstract class RawDynamicCachedFonts {
         'Downloaded $downloadedItems of $totalItems fonts (${((downloadedItems / totalItems) * 100).toStringAsFixed(1)}%)'
       ]);
 
-      yield font;
+      yield url;
     }
 
     await fontLoader.load();
@@ -347,7 +334,7 @@ abstract class RawDynamicCachedFonts {
 
     try {
       final file = await localFile(cacheKey);
-      file.delete();
+      if (file.existsSync()) file.delete();
     } catch (e) {
       throw StateError('Cant delete font $cacheKey');
     }

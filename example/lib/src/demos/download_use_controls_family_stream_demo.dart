@@ -1,8 +1,8 @@
 import 'package:async/async.dart' show StreamGroup;
-
 import 'package:dynamic_cached_fonts/dynamic_cached_fonts.dart';
 import 'package:dynamic_cached_fonts_example/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../components.dart';
 
@@ -10,7 +10,8 @@ class DynamicCachedFontsDemo7 extends StatefulWidget {
   const DynamicCachedFontsDemo7({Key? key}) : super(key: key);
 
   @override
-  _DynamicCachedFontsDemo7State createState() => _DynamicCachedFontsDemo7State();
+  _DynamicCachedFontsDemo7State createState() =>
+      _DynamicCachedFontsDemo7State();
 }
 
 class _DynamicCachedFontsDemo7State extends State<DynamicCachedFontsDemo7> {
@@ -18,9 +19,13 @@ class _DynamicCachedFontsDemo7State extends State<DynamicCachedFontsDemo7> {
   double progress = 0;
   DownloadProgress? downloadProgress;
 
-  final List<String> fontUrls = [mononokiBoldUrl, mononokiItalicUrl, mononokiRegularUrl];
-  late final Stream<FileInfo> downloadFontStreams;
-  late final Stream<FileInfo> loadCachedFamilyStream;
+  final List<String> fontUrls = [
+    mononokiBoldUrl,
+    mononokiItalicUrl,
+    mononokiRegularUrl,
+  ];
+  late final Stream<ByteData> downloadFontStreams;
+  late final Stream<String> loadCachedFamilyStream;
 
   @override
   void initState() {
@@ -33,15 +38,15 @@ class _DynamicCachedFontsDemo7State extends State<DynamicCachedFontsDemo7> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('$demoTitle - Load Family As Stream (Custom Controls)'),
+        title: const Text('$demoTitle - Stream (Custom Controls)'),
       ),
-      body: Column(
+      body: ListView(
         children: <Widget>[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <CustomButton>[
               CustomButton(
-                onPressed: handleDownloadButtonPress,
+                onPressed: () => handleDownloadButtonPress,
               ),
               CustomButton(
                 icon: Icons.font_download,
@@ -53,6 +58,12 @@ class _DynamicCachedFontsDemo7State extends State<DynamicCachedFontsDemo7> {
           DisplayText(
             'The text is being displayed in the default flutter font which is ${DefaultTextStyle.of(context).style.fontFamily}.',
             fontFamily: '',
+            fontSize: Theme.of(context).textTheme.headline6!.fontSize,
+          ),
+          DisplayText(
+            'To download $hurricane bold, click the download button above ☝️.',
+            fontFamily: hurricane,
+            fontWeight: FontWeight.bold,
             fontSize: Theme.of(context).textTheme.headline6!.fontSize,
           ),
           DisplayText(
@@ -84,7 +95,9 @@ class _DynamicCachedFontsDemo7State extends State<DynamicCachedFontsDemo7> {
     );
   }
 
-  Future<void> handleDownloadButtonPress() => downloadFontStreams.listen((_) {}).asFuture();
+  Future<void> handleDownloadButtonPress() {
+    return downloadFontStreams.listen((_) {}).asFuture();
+  }
 
   Future<void> handleUseFontPress() async {
     if ((await Future.wait(fontUrls.map(DynamicCachedFonts.canLoadFont)))
@@ -148,7 +161,8 @@ class _DynamicCachedFontsDemo7State extends State<DynamicCachedFontsDemo7> {
         ),
       ]);
     else if (downloadProgress != null && downloadProgress!.downloaded > 0)
-      loaders.add(Text('Downloaded font from ${downloadProgress?.originalUrl}!'));
+      loaders
+          .add(Text('Downloaded font from ${downloadProgress?.originalUrl}!'));
 
     return loaders;
   }

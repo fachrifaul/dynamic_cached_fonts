@@ -5,6 +5,7 @@ library dynamic_cached_fonts;
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:dynamic_cached_fonts/src/download_progress.dart';
 import 'package:dynamic_cached_fonts/src/file_io_desktop_and_mobile.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -12,6 +13,7 @@ import 'package:http/http.dart';
 
 import 'src/utils.dart';
 
+export 'src/download_progress.dart';
 export 'src/utils.dart' show cacheKeyFromUrl;
 
 part 'src/raw_dynamic_cached_fonts.dart';
@@ -299,7 +301,7 @@ class DynamicCachedFonts {
   /// - The [downloadProgressListener] property is used to listen to the download
   ///   progress of the font. It is called with a [DownloadProgress] object which
   ///   contains information about the download progress.
-  Stream<ByteData> loadStream({
+  Stream<String> loadStream({
     ItemCountProgressListener? itemCountProgressListener,
     DownloadProgressListener? downloadProgressListener,
   }) async* {
@@ -314,7 +316,7 @@ class DynamicCachedFonts {
       ),
     );
 
-    final Stream<ByteData> fontStream = loadCachedFamilyStream(
+    final Stream<String> fontStream = loadCachedFamilyStream(
       downloadUrls,
       fontFamily: fontFamily,
       progressListener: itemCountProgressListener,
@@ -323,8 +325,16 @@ class DynamicCachedFonts {
     try {
       await for (final font in fontStream) {
         yield font;
+
+        cacheFontStream(
+          font,
+          cacheStalePeriod: cacheStalePeriod,
+          maxCacheObjects: maxCacheObjects,
+          progressListener: downloadProgressListener,
+        ).listen((_) {});
       }
     } catch (_) {
+      print('Font is not in cache.');
       devLog(<String>['Font is not in cache.', 'Loading font now...']);
 
       await Future.wait([
@@ -505,7 +515,7 @@ class DynamicCachedFonts {
   ///   an [int] value which indicates the total number of items to be downloaded and,
   ///   another [int] value which indicates the number of items that have been
   ///   downloaded so far.
-  static Stream<ByteData> loadCachedFamilyStream(
+  static Stream<String> loadCachedFamilyStream(
     List<String> urls, {
     required String fontFamily,
     ItemCountProgressListener? progressListener,
